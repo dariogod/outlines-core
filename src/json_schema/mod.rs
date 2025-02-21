@@ -9,15 +9,18 @@ use crate::JsonSchemaParserError;
 
 type Result<T> = std::result::Result<T, JsonSchemaParserError>;
 
-pub fn build_regex_from_schema(json: &str, whitespace_pattern: Option<&str>) -> Result<String> {
+pub fn build_regex_from_schema(json: &str, whitespace_pattern: Option<&str>, max_recursion_depth: Option<usize>) -> Result<String> {
     let json_value: Value = serde_json::from_str(json)?;
-    to_regex(&json_value, whitespace_pattern)
+    to_regex(&json_value, whitespace_pattern, max_recursion_depth)
 }
 
-pub fn to_regex(json: &Value, whitespace_pattern: Option<&str>) -> Result<String> {
+pub fn to_regex(json: &Value, whitespace_pattern: Option<&str>, max_recursion_depth: Option<usize>) -> Result<String> {
     let mut parser = parsing::Parser::new(json);
     if let Some(pattern) = whitespace_pattern {
-        parser = parser.with_whitespace_pattern(pattern)
+        parser = parser.with_whitespace_pattern(pattern);
+    }
+    if let Some(depth) = max_recursion_depth {
+        parser = parser.with_max_recursion_depth(depth);
     }
     parser.to_regex(json)
 }
@@ -878,7 +881,7 @@ mod tests {
             ),
         ] {
             let json: Value = serde_json::from_str(schema).expect("Can't parse json");
-            let result = to_regex(&json, None).expect("To regex failed");
+            let result = to_regex(&json, None, None).expect("To regex failed");
             assert_eq!(result, regex);
 
             let re = Regex::new(&result).expect("Regex failed");
@@ -935,7 +938,7 @@ mod tests {
             ),
         ] {
             let json: Value = serde_json::from_str(schema).expect("Can't parse json");
-            let regex = to_regex(&json, None).expect("To regex failed");
+            let regex = to_regex(&json, None, None).expect("To regex failed");
             let re = Regex::new(&regex).expect("Regex failed");
             for m in a_match {
                 should_match(&re, m);
@@ -961,7 +964,7 @@ mod tests {
         }"##;
 
         let json_value: Value = serde_json::from_str(json).expect("Can't parse json");
-        let regex = to_regex(&json_value, None);
+        let regex = to_regex(&json_value, None, None);
         assert!(regex.is_ok(), "{:?}", regex);
 
         // Confirm the depth of 3 recursion levels by default, recursion level starts
@@ -1095,7 +1098,7 @@ mod tests {
         }"##;
 
         let json_value: Value = serde_json::from_str(json).expect("Can't parse json");
-        let regex = to_regex(&json_value, None);
+        let regex = to_regex(&json_value, None, None);
         assert!(regex.is_ok(), "{:?}", regex);
     }
 }

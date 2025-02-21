@@ -136,20 +136,25 @@ impl PyIndex {
 }
 
 #[pyfunction(name = "build_regex_from_schema")]
-#[pyo3(signature = (json, whitespace_pattern=None))]
+#[pyo3(signature = (json, whitespace_pattern=None, max_recursion_depth=None))]
 pub fn build_regex_from_schema_py(
     json: String,
     whitespace_pattern: Option<&str>,
+    max_recursion_depth: Option<usize>,
 ) -> PyResult<String> {
-    json_schema::build_regex_from_schema(&json, whitespace_pattern)
+    json_schema::build_regex_from_schema(&json, whitespace_pattern, max_recursion_depth)
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
 #[pyfunction(name = "to_regex")]
-#[pyo3(signature = (json, whitespace_pattern=None))]
-pub fn to_regex_py(json: Bound<PyDict>, whitespace_pattern: Option<&str>) -> PyResult<String> {
+#[pyo3(signature = (json, whitespace_pattern=None, max_recursion_depth=None))]
+pub fn to_regex_py(
+    json: Bound<PyDict>,
+    whitespace_pattern: Option<&str>,
+    max_recursion_depth: Option<usize>,
+) -> PyResult<String> {
     let json_value: Value = serde_pyobject::from_pyobject(json)?;
-    json_schema::to_regex(&json_value, whitespace_pattern)
+    json_schema::to_regex(&json_value, whitespace_pattern, max_recursion_depth)
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
